@@ -1,0 +1,42 @@
+{
+  "name": "vscode-inline-values-powershell",
+	"displayName": "vscode-inline-values-powershell",
+	"description": "Enables inline values for variables when debugging PowerShell scripts",
+	"version": "0.0.1",
+	"publisher": "TylerLeonhardt",
+	"enableProposedApi": true,
+	"engines": {
+		"vscode": "^1.54.0-insider"
+	},
+	"categories": [
+		"Programming Languages", "Debuggers"
+	],
+	"activationEvents": [
+        "onDebugResolve:PowerShell"
+	],
+	"main": "./out/extension.js",
+	"contributes": {},
+	"scripts": {
+		"vscode:prepublish": "yarn run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"pretest": "yarn run compile && yarn run lint",
+		"lint": "eslint src --ext ts",
+		"test": "node ./out/test/runTest.js",
+		"postinstall": "vscode-dts dev"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.53.0",
+		"@types/glob": "^7.1.3",
+		"@types/mocha": "^8.0.4",
+		"@types/node": "^12.11.7",
+		"eslint": "^7.19.0",
+		"@typescript-eslint/eslint-plugin": "^4.14.1",
+		"@typescript-eslint/parser": "^4.14.1",
+		"glob": "^7.1.6",
+		"mocha": "^8.2.1",
+		"typescript": "^4.1.3",
+		"vscode-test": "^1.5.0",
+		"vscode-dts": "0.3.1"
+	}
+}
