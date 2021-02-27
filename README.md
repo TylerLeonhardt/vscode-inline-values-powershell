@@ -1,4 +1,4 @@
-# vscode-inline-values-powershell README
+# Inline values for PowerShell variables
 
 This extension enables inline values for variables _when debugging_ a PowerShell script. This is using a proposed API so it's not available on the marketplace yet.
 
