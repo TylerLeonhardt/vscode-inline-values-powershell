@@ -1,5 +1,7 @@
 # Inline values for PowerShell variables
 
+![image](https://user-images.githubusercontent.com/2644648/109373505-0cb23380-7864-11eb-8bf2-a991873b6d02.png)
+
 This extension enables inline values for variables _when debugging_ a PowerShell script. This is using a proposed API so it's not available on the marketplace yet.
 
 ## Features
