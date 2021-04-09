@@ -23,7 +23,8 @@ $normal, \${braces}, $script:scoped
 		const provider = new PowerShellVariableInlineValuesProvider();
 
 		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
-			stoppedLocation: new vscode.Range(doc.lineCount - 1, 0, doc.lineCount - 1, 0)
+			stoppedLocation: new vscode.Range(doc.lineCount - 1, 0, doc.lineCount - 1, 0),
+			frameId: 0
 		});
 
 		assert.strictEqual(result?.length, 9);

@@ -1,15 +1,20 @@
 {
-  "name": "vscode-inline-values-powershell",
-	"displayName": "vscode-inline-values-powershell",
+	"name": "vscode-inline-values-powershell",
+	"displayName": "Inline Values support for PowerShell",
 	"description": "Enables inline values for variables when debugging PowerShell scripts",
-	"version": "0.0.1",
+	"version": "0.0.3",
 	"publisher": "TylerLeonhardt",
-	"enableProposedApi": true,
-	"engines": {
-		"vscode": "^1.54.0-insider"
+	"repository": {
+		"url": "https://github.com/TylerLeonhardt/vscode-inline-values-powershell"
 	},
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.55.0"
+	},
+	"icon": "assets/logo.png",
 	"categories": [
-		"Programming Languages", "Debuggers"
+		"Programming Languages",
+		"Debuggers"
 	],
 	"activationEvents": [
         "onDebugResolve:PowerShell"
@@ -22,11 +27,10 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "yarn run compile && yarn run lint",
 		"lint": "eslint src --ext ts",
-		"test": "node ./out/test/runTest.js",
-		"postinstall": "vscode-dts dev"
+		"test": "node ./out/test/runTest.js"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.53.0",
+		"@types/vscode": "^1.55.0",
 		"@types/glob": "^7.1.3",
 		"@types/mocha": "^8.0.4",
 		"@types/node": "^12.11.7",
@@ -37,6 +41,6 @@
 		"mocha": "^8.2.1",
 		"typescript": "^4.1.3",
 		"vscode-test": "^1.5.0",
-		"vscode-dts": "0.3.1"
+		"vsce": "^1.87.1"
 	}
 }
