@@ -17,6 +17,7 @@ $33333 = 'numbers'
 \${     } = 'spaces'
 $normal, \${braces}, $script:scoped
 4
+$true
 	`,
 		});
 
