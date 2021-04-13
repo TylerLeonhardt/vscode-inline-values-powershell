@@ -5,6 +5,8 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
     provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext) : vscode.ProviderResult<vscode.InlineValue[]> {
         const allValues: vscode.InlineValue[] = [];
 
+        const ignoredVariables = /^\$(?:true|false|null)$/i;
+
         for (let l = 0; l <= context.stoppedLocation.end.line; l++) {
             const line = document.lineAt(l);
 
@@ -29,6 +31,11 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
                 // These characters need to be trimmed off
                 if ([';', ',', '-', '+', '/', '*'].includes(varName[varName.length - 1])) {
                     varName = varName.substring(0, varName.length - 1);
+                }
+
+                // If known PowerShell constant, ignore
+                if (ignoredVariables.test(varName)) {
+                    continue;
                 }
 
                 const rng = new vscode.Range(l, match.index, l, match.index + varName.length);
