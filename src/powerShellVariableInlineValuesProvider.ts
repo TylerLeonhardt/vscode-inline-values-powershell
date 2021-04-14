@@ -14,7 +14,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
             }
 
             // Finds variables or expressions starting with $
-            // Group 1 + 2: Variable-name. Group 3: Expression if any
+            // Group 1/2: Variable-name. Group 3: Expression if any
             // Support variables names like ${var} or $var
             // and properties like  ."prop", .'prop' or .{ some prop }
             // and indexes
@@ -39,10 +39,10 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
     processInlineVariable(match: RegExpExecArray, line: number) : vscode.InlineValueVariableLookup | undefined {
         const ignoredVariables = /^\$(?:true|false|null)$/i;
 
-        // If we're looking at an "anything goes" variable, that has a capture group so use that instead
+        // If we're looking at an "anything goes" variable, get stripped variable name from group 1
         let varName = match[0][1] === '{'
             ? '$' + match[1]
-            : match[0];
+            : '$' + match[2];
 
         // If there's a scope, we need to remove it
         const colon = varName.indexOf(':');
