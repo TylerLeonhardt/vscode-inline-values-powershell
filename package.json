@@ -2,7 +2,7 @@
 	"name": "vscode-inline-values-powershell",
 	"displayName": "Inline Values support for PowerShell",
 	"description": "Enables inline values for variables when debugging PowerShell scripts",
-	"version": "0.0.3",
+	"version": "0.0.5",
 	"publisher": "TylerLeonhardt",
 	"repository": {
 		"url": "https://github.com/TylerLeonhardt/vscode-inline-values-powershell"
@@ -17,7 +17,7 @@
 		"Debuggers"
 	],
 	"activationEvents": [
-        "onDebugResolve:PowerShell"
+		"onDebugResolve:PowerShell"
 	],
 	"main": "./out/extension.js",
 	"contributes": {},
