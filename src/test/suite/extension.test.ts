@@ -150,7 +150,11 @@ $something_wrong? = 123
 			language: 'powershell',
 			content: `
 $script:scoped = 5
+$global:scoped = 5
+$local:scoped = 5
+$using:scoped = 5
 \${Script:special scoped}
+$invalidscope:notdetected = 123
 4
 `,
 		});
@@ -162,7 +166,7 @@ $script:scoped = 5
 			frameId: 0
 		});
 
-		assert.strictEqual(result?.length, 2);
+		assert.strictEqual(result?.length, 5);
 		for (let i = 0; i < result.length; i++) {
 			const variable = result![i] as vscode.InlineValueVariableLookup;
 
@@ -174,6 +178,15 @@ $script:scoped = 5
 					name = '$scoped';
 					break;
 				case 1:
+					name = '$scoped';
+					break;
+				case 2:
+					name = '$scoped';
+					break;
+				case 3:
+					name = '$scoped';
+					break;
+				case 4:
 					name = '$special scoped';
 					break;
 			}
