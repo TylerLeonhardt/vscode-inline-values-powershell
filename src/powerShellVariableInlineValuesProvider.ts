@@ -10,7 +10,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
     // https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_variables?view=powershell-5.1#variable-names-that-include-special-characters
     private readonly alphanumChars = /(?:\p{Lu}|\p{Ll}|\p{Lt}|\p{Lm}|\p{Lo}|\p{Nd}|[_?])/.source;
     private readonly variableRegex = new RegExp([
-        '(?:\\$\\{(.*?)(?<!`)\\})', // Special characters variables. Lazy match until unescaped }
+        '(?:\\$\\{(?<specialName>.*?)(?<!`)\\})', // Special characters variables. Lazy match until unescaped }
         `(?:\\$\\w+:${this.alphanumChars}+)`, // Scoped variables
         `(?:\\$${this.alphanumChars}+)`, // Normal variables
     ].join('|'), 'giu'); // u flag to support unicode char classes
@@ -27,9 +27,9 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
             }
 
             for (let match = this.variableRegex.exec(line.text); match; match = this.variableRegex.exec(line.text)) {
-                // If we're looking at special characters variable, use the variable name in capture group 1
+                // If we're looking at special characters variable, use the extracted variable name in capture group
                 let varName = match[0][1] === '{'
-                    ? '$' + match[1].replace(/`(.)/g,'$1') // Remove backticks used as escape char for curly braces, unicode etc.
+                    ? '$' + match.groups?.specialName?.replace(/`(.)/g,'$1') // Remove backticks used as escape char for curly braces, unicode etc.
                     : match[0];
 
                 // If there's a scope, we need to remove it
