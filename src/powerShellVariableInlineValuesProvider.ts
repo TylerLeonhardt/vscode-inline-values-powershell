@@ -17,10 +17,16 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
         `(?:\\$${this.alphanumChars}+)`, // Normal variables
     ].join('|'), 'giu'); // u flag to support unicode char classes
 
-    provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext): vscode.ProviderResult<vscode.InlineValue[]> {
+    async provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext) : Promise<vscode.InlineValue[]> {
+        const extensionSettings = vscode.workspace.getConfiguration('powershellInlineValues');
         const allValues: vscode.InlineValue[] = [];
 
-        for (let l = 0; l <= context.stoppedLocation.end.line; l++) {
+        let functions = extensionSettings.get('startLocation') !== 'file' ? await this.getFunctionsInScope(document, context) : [];
+        // Lookup closest matching function start or default to document start (0)
+        const startLine = Math.max(0, ...functions.map(fn => fn.range.start.line));
+        const endLine = context.stoppedLocation.end.line;
+
+        for (let l = startLine; l <= endLine; l++) {
             const line = document.lineAt(l);
 
             // Skip over comments
@@ -57,5 +63,44 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
         }
 
         return allValues;
+    }
+
+    private async getFunctionsInScope(document: vscode.TextDocument, context: vscode.InlineValueContext) : Promise<vscode.DocumentSymbol[]> {
+        const functions = await this.getFunctionsInDocument(document);
+        if (functions) {
+            // only return functions with stopped location in range
+            return functions.filter(func => func.range.contains(context.stoppedLocation));
+        }
+
+        return [];
+    }
+
+    private async getFunctionsInDocument(document: vscode.TextDocument) : Promise<vscode.DocumentSymbol[]> {
+        const extensionSettings = vscode.workspace.getConfiguration('powershellInlineValues');
+
+        // TODO Possible to cache this per document.uri per debugsession? Document changes during debugging are ignored
+        const allSymbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', document.uri);
+
+        if(allSymbols) {
+            // currentFunction not recommended atm. as nested functions might not show variables defined in parent scope. Similar to https://github.com/TylerLeonhardt/vscode-inline-values-powershell/issues/11
+            // flatten symbols if user selected anyFcurrentFunctionunction (nested functions)
+            const symbolsInScope = extensionSettings.get('startLocation') === 'currentFunction' ? this.processSymbols(allSymbols) : allSymbols;
+            // keep only functions
+            return symbolsInScope.filter(s => s.kind === vscode.SymbolKind.Function);
+        }
+
+        return [];
+    }
+
+    private processSymbols(symbols: vscode.DocumentSymbol[]): vscode.DocumentSymbol[] {
+        let result: vscode.DocumentSymbol[] = [];
+        symbols.map(symbol => {
+            result.push(symbol);
+            if (symbol.children && symbol.children.length > 0) {
+                result = result.concat(this.processSymbols(symbol.children));
+            }
+        });
+
+        return result;
     }
 }

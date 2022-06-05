@@ -20,7 +20,28 @@
 		"onDebugResolve:PowerShell"
 	],
 	"main": "./out/extension.js",
-	"contributes": {},
+	"contributes": {
+		"configuration": {
+			"title": "Inline Values support for PowerShell",
+			"properties": {
+				"powershellInlineValues.startLocation": {
+					"type": "string",
+					"default": "file",
+					"enum": [
+						"file",
+						"rootFunction",
+						"currentFunction"
+					],
+					"enumDescriptions": [
+						"Always from top of file",
+						"Start of root-level function. Defaults to top of file if not stopped inside function.",
+						"Start of current function. Defaults to top of file if not stopped inside function."
+					],
+					"description": "Specifies the start position for inline values. Inline values will be shown from selected start until stopped location during debugging."
+				}
+			}
+		}
+	},
 	"scripts": {
 		"vscode:prepublish": "yarn run compile",
 		"compile": "tsc -p ./",
