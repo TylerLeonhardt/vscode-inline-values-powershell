@@ -153,6 +153,8 @@ $script:scoped = 5
 $global:scoped = 5
 $local:scoped = 5
 $using:scoped = 5
+$private:scoped = 5
+$variable:scoped = 5
 \${Script:special scoped}
 $invalidscope:notdetected = 123
 4
@@ -166,7 +168,7 @@ $invalidscope:notdetected = 123
 			frameId: 0
 		});
 
-		assert.strictEqual(result?.length, 5);
+		assert.strictEqual(result?.length, 7);
 		for (let i = 0; i < result.length; i++) {
 			const variable = result![i] as vscode.InlineValueVariableLookup;
 
@@ -187,6 +189,12 @@ $invalidscope:notdetected = 123
 					name = '$scoped';
 					break;
 				case 4:
+					name = '$scoped';
+					break;
+				case 5:
+					name = '$scoped';
+					break;
+				case 6:
 					name = '$special scoped';
 					break;
 			}

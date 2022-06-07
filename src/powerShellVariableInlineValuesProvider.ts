@@ -4,8 +4,10 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
 
     // Known constants
     private readonly knownConstants = /^\$(?:true|false|null)$/i;
-    private readonly validScopes = /^(?:global|local|script|using)$/i;
-    
+
+    // https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_scopes?view=powershell-5.1#scope-modifiers
+    private readonly supportedScopes = /^(?:global|local|script|private|using|variable)$/i;
+
     // Variable patterns
     // https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_variables?view=powershell-5.1#variable-names-that-include-special-characters
     private readonly alphanumChars = /(?:\p{Lu}|\p{Ll}|\p{Lt}|\p{Lm}|\p{Lo}|\p{Nd}|[_?])/.source;
@@ -37,7 +39,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
                 if (colon !== -1) {
                     // If invalid scope, ignore
                     const scope = varName.substring(1, colon);
-                    if(!this.validScopes.test(scope)) {
+                    if(!this.supportedScopes.test(scope)) {
                         continue;
                     }
 
