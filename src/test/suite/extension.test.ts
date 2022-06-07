@@ -32,7 +32,7 @@ $normal, \${braces}, $script:scoped
 
 			let name: string = '';
 			let startChar: number = 0;
-			let line: number = i+1;
+			let line: number = i + 1;
 			switch (i) {
 				case 0:
 					name = '$normal';
@@ -60,7 +60,7 @@ $normal, \${braces}, $script:scoped
 					line = 5;
 					break;
 			}
-		
+
 			assert.strictEqual(variable.caseSensitiveLookup, false);
 			assert.strictEqual(variable.range.start.line, line);
 			assert.strictEqual(variable.range.end.line, line);
@@ -84,7 +84,7 @@ $normal, \${braces}, $script:scoped
 		});
 
 		assert.strictEqual(result?.length, 1);
-		
+
 		// Making sure the test actually ran by including a real variable
 		const variable = result![0] as vscode.InlineValueVariableLookup;
 		assert.strictEqual(variable.caseSensitiveLookup, false);
@@ -120,7 +120,7 @@ $something_wrong? = 123
 
 			let name: string = '';
 			let startChar: number = 0;
-			let line: number = i+1;
+			let line: number = i + 1;
 			switch (i) {
 				case 0:
 					name = '$normal';
@@ -135,7 +135,7 @@ $something_wrong? = 123
 					name = '$something_wrong?';
 					break;
 			}
-		
+
 			assert.strictEqual(variable.caseSensitiveLookup, false);
 			assert.strictEqual(variable.range.start.line, line);
 			assert.strictEqual(variable.range.end.line, line);
@@ -174,7 +174,7 @@ $invalidscope:notdetected = 123
 
 			let name: string = '';
 			let startChar: number = 0;
-			let line: number = i+1;
+			let line: number = i + 1;
 			switch (i) {
 				case 0:
 					name = '$scoped';
@@ -198,7 +198,7 @@ $invalidscope:notdetected = 123
 					name = '$special scoped';
 					break;
 			}
-		
+
 			assert.strictEqual(variable.caseSensitiveLookup, false);
 			assert.strictEqual(variable.range.start.line, line);
 			assert.strictEqual(variable.range.end.line, line);
@@ -233,7 +233,7 @@ $invalidscope:notdetected = 123
 
 			let name: string = '';
 			let startChar: number = 0;
-			let line: number = i+1;
+			let line: number = i + 1;
 			switch (i) {
 				case 0:
 					name = '$hello`b';
@@ -251,7 +251,7 @@ $invalidscope:notdetected = 123
 					name = '$bra%!c\\e}<s';
 					break;
 			}
-		
+
 			assert.strictEqual(variable.caseSensitiveLookup, false);
 			assert.strictEqual(variable.range.start.line, line);
 			assert.strictEqual(variable.range.end.line, line);
@@ -291,7 +291,7 @@ $invalidscope:notdetected = 123
 					line = 0;
 					break;
 			}
-		
+
 			assert.strictEqual(variable.caseSensitiveLookup, false);
 			assert.strictEqual(variable.range.start.line, line);
 			assert.strictEqual(variable.range.end.line, line);
@@ -326,7 +326,7 @@ $normal, \${braces}, $script:scoped
 
 			let name: string = '';
 			let startChar: number = 0;
-			let line: number = i+1;
+			let line: number = i + 1;
 			switch (i) {
 				case 0:
 					name = '$dict';
@@ -376,7 +376,7 @@ $normal, \${braces}, $script:scoped
 					line = 5;
 					break;
 			}
-		
+
 			assert.strictEqual(variable.caseSensitiveLookup, false);
 			assert.strictEqual(variable.range.start.line, line);
 			assert.strictEqual(variable.range.end.line, line);
@@ -412,7 +412,7 @@ $a*$b
 
 			let name: string = '';
 			let startChar: number = 0;
-			let line: number = i+1;
+			let line: number = i + 1;
 			switch (i) {
 				case 0:
 					name = '$a';
@@ -462,7 +462,7 @@ $a*$b
 					line = 6;
 					break;
 			}
-		
+
 			assert.strictEqual(variable.caseSensitiveLookup, false);
 			assert.strictEqual(variable.range.start.line, line);
 			assert.strictEqual(variable.range.end.line, line);

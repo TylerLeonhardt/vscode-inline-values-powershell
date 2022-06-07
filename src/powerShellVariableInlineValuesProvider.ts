@@ -17,7 +17,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
         `(?:\\$${this.alphanumChars}+)`, // Normal variables
     ].join('|'), 'giu'); // u flag to support unicode char classes
 
-    provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext) : vscode.ProviderResult<vscode.InlineValue[]> {
+    provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext): vscode.ProviderResult<vscode.InlineValue[]> {
         const allValues: vscode.InlineValue[] = [];
 
         for (let l = 0; l <= context.stoppedLocation.end.line; l++) {
@@ -31,7 +31,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
             for (let match = this.variableRegex.exec(line.text); match; match = this.variableRegex.exec(line.text)) {
                 // If we're looking at special characters variable, use the extracted variable name in capture group
                 let varName = match[0][1] === '{'
-                    ? '$' + match.groups?.specialName?.replace(/`(.)/g,'$1') // Remove backticks used as escape char for curly braces, unicode etc.
+                    ? '$' + match.groups?.specialName?.replace(/`(.)/g, '$1') // Remove backticks used as escape char for curly braces, unicode etc.
                     : match[0];
 
                 // If there's a scope, we need to remove it
@@ -39,7 +39,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
                 if (colon !== -1) {
                     // If invalid scope, ignore
                     const scope = varName.substring(1, colon);
-                    if(!this.supportedScopes.test(scope)) {
+                    if (!this.supportedScopes.test(scope)) {
                         continue;
                     }
 
