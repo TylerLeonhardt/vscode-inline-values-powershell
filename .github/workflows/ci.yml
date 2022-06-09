@@ -8,6 +8,7 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -24,3 +25,8 @@ jobs:
         cache: 'yarn'
     - run: yarn
     - run: yarn test
+    - run: npx vsce package
+    - uses: actions/upload-artifact@v3
+      with:
+        name: vsix
+        path: ./vscode-inline-values-powershell-*.vsix
