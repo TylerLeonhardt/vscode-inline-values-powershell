@@ -11,17 +11,12 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
-    # - name: Setup Build Environment
-    #   run: |
-    #     sudo apt-get update
-    #     sudo apt-get install -y libxkbfile-dev pkg-config libsecret-1-dev libxss1 dbus xvfb libgtk-3-0 libgbm1
-        # sudo cp build/xvfb.init /etc/init.d/xvfb
-        # sudo chmod +x /etc/init.d/xvfb
-        # sudo update-rc.d xvfb defaults
-        # sudo service xvfb start
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
