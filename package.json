@@ -2,14 +2,14 @@
 	"name": "vscode-inline-values-powershell",
 	"displayName": "Inline Values support for PowerShell",
 	"description": "Enables inline values for variables when debugging PowerShell scripts",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"publisher": "TylerLeonhardt",
 	"repository": {
 		"url": "https://github.com/TylerLeonhardt/vscode-inline-values-powershell"
 	},
 	"license": "MIT",
 	"engines": {
-		"vscode": "^1.55.0"
+		"vscode": "^1.60.0"
 	},
 	"icon": "assets/logo.png",
 	"categories": [
@@ -30,17 +30,23 @@
 		"test": "node ./out/test/runTest.js"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.55.0",
-		"@types/glob": "^7.1.3",
-		"@types/mocha": "^8.0.4",
-		"@types/node": "^12.11.7",
-		"eslint": "^7.19.0",
-		"@typescript-eslint/eslint-plugin": "^4.14.1",
-		"@typescript-eslint/parser": "^4.14.1",
-		"glob": "^7.1.6",
-		"mocha": "^8.2.1",
-		"typescript": "^4.1.3",
-		"vscode-test": "^1.5.0",
-		"vsce": "^1.87.1"
+		"@types/vscode": "^1.60.0",
+		"@types/glob": "^7.2.0",
+		"@types/mocha": "^9.1.1",
+		"@types/node": "^16.0.0",
+		"eslint": "^8.17.0",
+		"@typescript-eslint/eslint-plugin": "^5.27.1",
+		"@typescript-eslint/parser": "^5.27.1",
+		"glob": "^8.0.3",
+		"mocha": "^10.0.0",
+		"typescript": "^4.7.3",
+		"vscode-test": "^1.6.1",
+		"vsce": "^2.9.1"
+	},
+	"__metadata": {
+		"id": "bc57c680-bf5c-47c9-ae98-04bc4d51bcf4",
+		"publisherDisplayName": "Tyler Leonhardt",
+		"publisherId": "2d97a8b2-cb9f-4729-9fca-51d9cea8f5dc",
+		"isPreReleaseVersion": false
 	}
 }
