@@ -2,10 +2,23 @@ import * as vscode from 'vscode';
 
 export class PowerShellVariableInlineValuesProvider implements vscode.InlineValuesProvider {
 
-    provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext) : vscode.ProviderResult<vscode.InlineValue[]> {
-        const allValues: vscode.InlineValue[] = [];
+    // Known constants
+    private readonly knownConstants = /^\$(?:true|false|null)$/i;
 
-        const ignoredVariables = /^\$(?:true|false|null)$/i;
+    // https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_scopes?view=powershell-5.1#scope-modifiers
+    private readonly supportedScopes = /^(?:global|local|script|private|using|variable)$/i;
+
+    // Variable patterns
+    // https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_variables?view=powershell-5.1#variable-names-that-include-special-characters
+    private readonly alphanumChars = /(?:\p{Lu}|\p{Ll}|\p{Lt}|\p{Lm}|\p{Lo}|\p{Nd}|[_?])/.source;
+    private readonly variableRegex = new RegExp([
+        '(?:\\$\\{(?<specialName>.*?)(?<!`)\\})', // Special characters variables. Lazy match until unescaped }
+        `(?:\\$\\w+:${this.alphanumChars}+)`, // Scoped variables
+        `(?:\\$${this.alphanumChars}+)`, // Normal variables
+    ].join('|'), 'giu'); // u flag to support unicode char classes
+
+    provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext): vscode.ProviderResult<vscode.InlineValue[]> {
+        const allValues: vscode.InlineValue[] = [];
 
         for (let l = 0; l <= context.stoppedLocation.end.line; l++) {
             const line = document.lineAt(l);
@@ -15,26 +28,26 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
                 continue;
             }
 
-            const variableMatches = /(?:\${(.*)})|(?:\$\S+:\S+)|(?:\$\S+)/gi;
-            for (let match = variableMatches.exec(line.text); match; match = variableMatches.exec(line.text)) {
-                // If we're looking at an "anything goes" variable, that has a capture group so use that instead
+            for (let match = this.variableRegex.exec(line.text); match; match = this.variableRegex.exec(line.text)) {
+                // If we're looking at special characters variable, use the extracted variable name in capture group
                 let varName = match[0][1] === '{'
-                    ? '$' + match[1]
+                    ? '$' + match.groups?.specialName?.replace(/`(.)/g, '$1') // Remove backticks used as escape char for curly braces, unicode etc.
                     : match[0];
 
                 // If there's a scope, we need to remove it
                 const colon = varName.indexOf(':');
                 if (colon !== -1) {
+                    // If invalid scope, ignore
+                    const scope = varName.substring(1, colon);
+                    if (!this.supportedScopes.test(scope)) {
+                        continue;
+                    }
+
                     varName = '$' + varName.substring(colon + 1);
                 }
 
-                // These characters need to be trimmed off
-                if ([';', ',', '-', '+', '/', '*'].includes(varName[varName.length - 1])) {
-                    varName = varName.substring(0, varName.length - 1);
-                }
-
                 // If known PowerShell constant, ignore
-                if (ignoredVariables.test(varName)) {
+                if (this.knownConstants.test(varName)) {
                     continue;
                 }
 

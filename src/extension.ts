@@ -5,4 +5,4 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.languages.registerInlineValuesProvider('powershell', new PowerShellVariableInlineValuesProvider()));
 }
 
-export function deactivate() {}
+export function deactivate() { }
