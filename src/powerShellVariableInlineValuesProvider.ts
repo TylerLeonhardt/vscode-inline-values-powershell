@@ -13,20 +13,29 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
     private readonly alphanumChars = /(?:\p{Lu}|\p{Ll}|\p{Lt}|\p{Lm}|\p{Lo}|\p{Nd}|[_?])/.source;
     private readonly variableRegex = new RegExp([
         '(?:\\$\\{(?<specialName>.*?)(?<!`)\\})', // Special characters variables. Lazy match until unescaped }
-        `(?:\\$\\w+:${this.alphanumChars}+)`, // Scoped variables
+        `(?:\\$${this.alphanumChars}+:${this.alphanumChars}+)`, // Scoped variables
         `(?:\\$${this.alphanumChars}+)`, // Normal variables
     ].join('|'), 'giu'); // u flag to support unicode char classes
 
-    async provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext) : Promise<vscode.InlineValue[]> {
-        const extensionSettings = vscode.workspace.getConfiguration('powershellInlineValues');
-        const allValues: vscode.InlineValue[] = [];
+    // Cache for symbols per document in the current debugsessions
+    private functionCache: Map<string, vscode.DocumentSymbol[]>;
 
-        let functions = extensionSettings.get('startLocation') !== 'file' ? await this.getFunctionsInScope(document, context) : [];
-        // Lookup closest matching function start or default to document start (0)
-        const startLine = Math.max(0, ...functions.map(fn => fn.range.start.line));
+    constructor(functionCache: Map<string, vscode.DocumentSymbol[]>) {
+        this.functionCache = functionCache;
+    }
+
+    async provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext): Promise<vscode.InlineValue[]> {
+        const allValues: vscode.InlineValue[] = [];
+        const startLine = await this.getStartLine(document, context);
         const endLine = context.stoppedLocation.end.line;
+        const excludedLines = await this.getExcludedLines(document, context);
 
         for (let l = startLine; l <= endLine; l++) {
+            // Exclude lines out of scope (other functions)
+            if (excludedLines.includes(l)) {
+                continue;
+            }
+
             const line = document.lineAt(l);
 
             // Skip over comments
@@ -61,7 +70,6 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
                 allValues.push(new vscode.InlineValueVariableLookup(rng, varName, false));
             }
         }
-
         return allValues;
     }
 
@@ -76,31 +84,61 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
     }
 
     private async getFunctionsInDocument(document: vscode.TextDocument) : Promise<vscode.DocumentSymbol[]> {
-        const extensionSettings = vscode.workspace.getConfiguration('powershellInlineValues');
-
-        // TODO Possible to cache this per document.uri per debugsession? Document changes during debugging are ignored
-        const allSymbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', document.uri);
-
-        if(allSymbols) {
-            // currentFunction not recommended atm. as nested functions might not show variables defined in parent scope. Similar to https://github.com/TylerLeonhardt/vscode-inline-values-powershell/issues/11
-            // flatten symbols if user selected anyFcurrentFunctionunction (nested functions)
-            const symbolsInScope = extensionSettings.get('startLocation') === 'currentFunction' ? this.processSymbols(allSymbols) : allSymbols;
-            // keep only functions
-            return symbolsInScope.filter(s => s.kind === vscode.SymbolKind.Function);
+        const cacheKey = document.uri.toString();
+        if (this.functionCache.has(cacheKey)) {
+            return this.functionCache.get(cacheKey) ?? [];
         }
 
-        return [];
+        const documentSymbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', document.uri);
+        let functions: vscode.DocumentSymbol[] = [];
+
+        if (documentSymbols) {
+            // flatten symbols and keep only functions
+            functions = this.flattenSymbols(documentSymbols).filter(s => s.kind === vscode.SymbolKind.Function);
+        }
+
+        this.functionCache.set(cacheKey, functions);
+        return functions;
     }
 
-    private processSymbols(symbols: vscode.DocumentSymbol[]): vscode.DocumentSymbol[] {
+    private flattenSymbols(symbols: vscode.DocumentSymbol[]): vscode.DocumentSymbol[] {
         let result: vscode.DocumentSymbol[] = [];
         symbols.map(symbol => {
             result.push(symbol);
             if (symbol.children && symbol.children.length > 0) {
-                result = result.concat(this.processSymbols(symbol.children));
+                result = result.concat(this.flattenSymbols(symbol.children));
             }
         });
-
         return result;
+    }
+
+    private async getStartLine(document: vscode.TextDocument, context: vscode.InlineValueContext): Promise<number> {
+        const extensionSettings = vscode.workspace.getConfiguration('powershellInlineValues');
+        const startLocationSetting = extensionSettings.get('startLocation');
+
+        if (startLocationSetting === 'document') {
+            return 0;
+        }
+
+        // Lookup closest matching function start or default to document start (0)
+        const functions = await this.getFunctionsInScope(document, context);
+        return Math.max(0, ...functions.map(fn => fn.range.start.line));
+    }
+
+    private async getExcludedLines(document: vscode.TextDocument, context: vscode.InlineValueContext): Promise<number[]> {
+        const functions = await this.getFunctionsInDocument(document);
+        const outOfScopeFunctions = functions.filter(f => !f.range.contains(context.stoppedLocation));
+        const excludedLines = [];
+
+        for (var i = 0, length = outOfScopeFunctions.length; i < length; ++i) {
+            const functionRange = this.range(outOfScopeFunctions[i].range.start.line, outOfScopeFunctions[i].range.end.line);
+            excludedLines.push(...functionRange.filter(line => context.stoppedLocation.start.line > line || context.stoppedLocation.end.line < line));
+        }
+
+        return excludedLines;
+    }
+
+    private range(start: number, end: number) {
+        return Array(end - start + 1).fill(undefined).map((_, i) => start + i);
     }
 }

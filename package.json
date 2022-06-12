@@ -26,18 +26,16 @@
 			"properties": {
 				"powershellInlineValues.startLocation": {
 					"type": "string",
-					"default": "file",
+					"default": "currentFunction",
 					"enum": [
-						"file",
-						"rootFunction",
-						"currentFunction"
+						"currentFunction",
+						"document"
 					],
 					"enumDescriptions": [
-						"Always from top of file",
-						"Start of root-level function. Defaults to top of file if not stopped inside function.",
-						"Start of current function. Defaults to top of file if not stopped inside function."
+						"Start of current function. Defaults to top of document if not stopped inside function.",
+						"Always from top of document. Default before 0.0.7"
 					],
-					"description": "Specifies the start position for inline values. Inline values will be shown from selected start until stopped location during debugging."
+					"description": "Specifies the start position for inline values while debugging. Inline values will be shown from selected start positiion until stopped location."
 				}
 			}
 		}
