@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { PowerShellVariableInlineValuesProvider } from '../../powerShellVariableInlineValuesProvider';
 
 suite('Variable detection', async () => {
-	vscode.window.showInformationMessage('Start all tests.');
+	const provider: PowerShellVariableInlineValuesProvider = new PowerShellVariableInlineValuesProvider(new Map<string, vscode.DocumentSymbol[]>());
 
 	test('Misc variable tests', async () => {
 		const doc = await vscode.workspace.openTextDocument({
@@ -18,8 +18,6 @@ $normal, \${braces}, $script:scoped
 4
 `,
 		});
-
-		const provider = new PowerShellVariableInlineValuesProvider();
 
 		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
 			stoppedLocation: new vscode.Range(doc.lineCount - 1, 0, doc.lineCount - 1, 0),
@@ -76,8 +74,6 @@ $normal, \${braces}, $script:scoped
 			content: '$false $true $null $123',
 		});
 
-		const provider = new PowerShellVariableInlineValuesProvider();
-
 		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
 			stoppedLocation: new vscode.Range(doc.lineCount - 1, 0, doc.lineCount - 1, 0),
 			frameId: 0
@@ -106,8 +102,6 @@ $something_wrong? = 123
 4
 `,
 		});
-
-		const provider = new PowerShellVariableInlineValuesProvider();
 
 		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
 			stoppedLocation: new vscode.Range(doc.lineCount - 1, 0, doc.lineCount - 1, 0),
@@ -160,8 +154,6 @@ $invalidscope:notdetected = 123
 4
 `,
 		});
-
-		const provider = new PowerShellVariableInlineValuesProvider();
 
 		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
 			stoppedLocation: new vscode.Range(doc.lineCount - 1, 0, doc.lineCount - 1, 0),
@@ -220,8 +212,6 @@ $invalidscope:notdetected = 123
 `,
 		});
 
-		const provider = new PowerShellVariableInlineValuesProvider();
-
 		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
 			stoppedLocation: new vscode.Range(doc.lineCount - 1, 0, doc.lineCount - 1, 0),
 			frameId: 0
@@ -267,8 +257,6 @@ $invalidscope:notdetected = 123
 			content: `$sb = {\${hello \`{ \`} world}}`,
 		});
 
-		const provider = new PowerShellVariableInlineValuesProvider();
-
 		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
 			stoppedLocation: new vscode.Range(doc.lineCount - 1, 0, doc.lineCount - 1, 0),
 			frameId: 0
@@ -312,8 +300,6 @@ $normal, \${braces}, $script:scoped
 @{key = \${special var}}
 `,
 		});
-
-		const provider = new PowerShellVariableInlineValuesProvider();
 
 		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
 			stoppedLocation: new vscode.Range(doc.lineCount - 1, 0, doc.lineCount - 1, 0),
@@ -398,8 +384,6 @@ $a/$b
 $a*$b
 `,
 		});
-
-		const provider = new PowerShellVariableInlineValuesProvider();
 
 		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
 			stoppedLocation: new vscode.Range(doc.lineCount - 1, 0, doc.lineCount - 1, 0),
