@@ -3,10 +3,10 @@ import * as vscode from 'vscode';
 export class PowerShellVariableInlineValuesProvider implements vscode.InlineValuesProvider {
 
     // Known constants
-    private readonly knownConstants = /^\$(?:true|false|null)$/i;
-
+    private readonly knownConstants = ['$true', '$false', '$null'];
+    // private readonly knownConstants = /^\$(?:true|false|null)$/i;
     // https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_scopes?view=powershell-5.1#scope-modifiers
-    private readonly supportedScopes = /^(?:global|local|script|private|using|variable)$/i;
+    private readonly supportedScopes = ['global', 'local', 'script', 'private', 'using', 'variable'];
 
     // Variable patterns
     // https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_variables?view=powershell-5.1#variable-names-that-include-special-characters
@@ -27,7 +27,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
         const allValues: vscode.InlineValue[] = [];
         const startLine = await this.getStartLine(document, context);
         const endLine = context.stoppedLocation.end.line;
-        const excludedLines = await this.getExcludedLines(document, context);
+        const excludedLines = await this.getExcludedLines(document, context, startLine);
 
         for (let l = startLine; l <= endLine; l++) {
             // Exclude lines out of scope (other functions)
@@ -41,7 +41,6 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
             if (line.text.trimStart().startsWith('#')) {
                 continue;
             }
-
             for (let match = this.variableRegex.exec(line.text); match; match = this.variableRegex.exec(line.text)) {
                 // If we're looking at special characters variable, use the extracted variable name in capture group
                 let varName = match[0][1] === '{'
@@ -53,7 +52,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
                 if (colon !== -1) {
                     // If invalid scope, ignore
                     const scope = varName.substring(1, colon);
-                    if (!this.supportedScopes.test(scope)) {
+                    if (!this.supportedScopes.includes(scope.toLowerCase())) {
                         continue;
                     }
 
@@ -61,7 +60,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
                 }
 
                 // If known PowerShell constant, ignore
-                if (this.knownConstants.test(varName)) {
+                if (this.knownConstants.includes(varName.toLowerCase())) {
                     continue;
                 }
 
@@ -74,12 +73,19 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
 
     private async getFunctionsInScope(document: vscode.TextDocument, context: vscode.InlineValueContext) : Promise<vscode.DocumentSymbol[]> {
         const functions = await this.getFunctionsInDocument(document);
-        if (functions) {
+        const stoppedStart = context.stoppedLocation.start.line;
+        const stoppedEnd = context.stoppedLocation.end.line;
+        const res: vscode.DocumentSymbol[] = [];
+
+        for (var i = 0, length = functions.length; i < length; ++i) {
+            const func = functions[i];
             // only return functions with stopped location in range
-            return functions.filter(func => func.range.contains(context.stoppedLocation));
+            if (func.range.start.line < stoppedStart && func.range.end.line > stoppedEnd && func.range.contains(context.stoppedLocation)) {
+                res.push(func);
+            }
         }
 
-        return [];
+        return res;
     }
 
     private async getFunctionsInDocument(document: vscode.TextDocument) : Promise<vscode.DocumentSymbol[]> {
@@ -124,14 +130,20 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
         return Math.max(0, ...functions.map(fn => fn.range.start.line));
     }
 
-    private async getExcludedLines(document: vscode.TextDocument, context: vscode.InlineValueContext): Promise<number[]> {
+    private async getExcludedLines(document: vscode.TextDocument, context: vscode.InlineValueContext, startLine: number): Promise<number[]> {
         const functions = await this.getFunctionsInDocument(document);
-        const outOfScopeFunctions = functions.filter(f => !f.range.contains(context.stoppedLocation));
+        const stoppedEnd = context.stoppedLocation.end.line;
         const excludedLines = [];
 
-        for (var i = 0, length = outOfScopeFunctions.length; i < length; ++i) {
-            const functionRange = this.range(outOfScopeFunctions[i].range.start.line, outOfScopeFunctions[i].range.end.line);
-            excludedLines.push(...functionRange.filter(line => context.stoppedLocation.start.line > line || context.stoppedLocation.end.line < line));
+        for (var i = 0, length = functions.length; i < length; ++i) {
+            const func = functions[i];
+            // startLine (either document start or closest function start) are provided, so functions necessary to exclude
+            // will always start >= documentStart or after currentFunction start if nested function.
+            // Don't bother checking functions before startLine or after stoppedLocation
+            if (func.range.start.line >= startLine && func.range.start.line < stoppedEnd && !func.range.contains(context.stoppedLocation)) {
+                const functionRange = this.range(func.range.start.line, func.range.end.line);
+                excludedLines.push(...functionRange.filter(line => line < context.stoppedLocation.start.line || line > stoppedEnd));
+            }
         }
 
         return excludedLines;
