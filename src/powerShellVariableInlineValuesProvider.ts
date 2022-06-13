@@ -10,11 +10,10 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
 
     // Variable patterns
     // https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_variables?view=powershell-5.1#variable-names-that-include-special-characters
-    private readonly alphanumChars = /(?:\p{Lu}|\p{Ll}|\p{Lt}|\p{Lm}|\p{Lo}|\p{Nd}|[_?])/.source;
+    private readonly alphanumChars = /(?:\p{Ll}|\p{Lu}|\p{Nd}|[_?]|\p{Lt}|\p{Lm}|\p{Lo})/.source;
     private readonly variableRegex = new RegExp([
         '(?:\\$\\{(?<specialName>.*?)(?<!`)\\})', // Special characters variables. Lazy match until unescaped }
-        `(?:\\$${this.alphanumChars}+:${this.alphanumChars}+)`, // Scoped variables
-        `(?:\\$${this.alphanumChars}+)`, // Normal variables
+        `(?:\\$(?:[a-zA-Z]+:)?${this.alphanumChars}+)`, // Scoped or normal variables
     ].join('|'), 'giu'); // u flag to support unicode char classes
 
     // Cache for symbols per document in the current debugsessions
