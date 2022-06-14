@@ -3,6 +3,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { PowerShellVariableInlineValuesProvider } from '../../powerShellVariableInlineValuesProvider';
 import * as testUtils from '../testUtils';
+import { DocumentParser } from '../../documentParser';
 
 suite('PowerShellVariableInlineValuesProvider tests', async () => {
 	suiteSetup(async () => {
@@ -10,7 +11,7 @@ suite('PowerShellVariableInlineValuesProvider tests', async () => {
 	});
 
 	suite('Variable detection', async () => {
-		const provider: PowerShellVariableInlineValuesProvider = new PowerShellVariableInlineValuesProvider(new Map<string, vscode.DocumentSymbol[]>());
+		const provider: PowerShellVariableInlineValuesProvider = new PowerShellVariableInlineValuesProvider(new DocumentParser());
 
 		test('Misc variable tests', async () => {
 			const doc = await vscode.workspace.openTextDocument({
@@ -464,7 +465,7 @@ $a*$b
 	});
 
 	suite('Common search range tests', async () => {
-		const provider: PowerShellVariableInlineValuesProvider = new PowerShellVariableInlineValuesProvider(new Map<string, vscode.DocumentSymbol[]>());
+		const provider: PowerShellVariableInlineValuesProvider = new PowerShellVariableInlineValuesProvider(new DocumentParser());
 
 		test('variables below stopped location are ignored', async () => {
 			const doc = await vscode.workspace.openTextDocument({
@@ -570,7 +571,7 @@ $notfound
 	});
 
 	suite('startLocation tests', async () => {
-		const provider: PowerShellVariableInlineValuesProvider = new PowerShellVariableInlineValuesProvider(new Map<string, vscode.DocumentSymbol[]>());
+		const provider: PowerShellVariableInlineValuesProvider = new PowerShellVariableInlineValuesProvider(new DocumentParser());
 		let currentSetting: string;
 
 		suiteSetup(() => {

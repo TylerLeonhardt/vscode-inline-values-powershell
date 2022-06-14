@@ -1,19 +1,20 @@
 import * as vscode from 'vscode';
 import { PowerShellVariableInlineValuesProvider } from './powerShellVariableInlineValuesProvider';
+import { DocumentParser } from './documentParser';
 
 export function activate(context: vscode.ExtensionContext) {
-	// Used to avoid calling symbol provider for the same document on every stopped location
-	const functionCache: Map<string, vscode.DocumentSymbol[]> = new Map<string, vscode.DocumentSymbol[]>();
+	const parser = new DocumentParser();
 
-	context.subscriptions.push(vscode.languages.registerInlineValuesProvider('powershell', new PowerShellVariableInlineValuesProvider(functionCache)));
+	context.subscriptions.push(vscode.languages.registerInlineValuesProvider('powershell', new PowerShellVariableInlineValuesProvider(parser)));
 
 	// Clear function cache to get updated files in next debug session
 	context.subscriptions.push(
 		vscode.debug.onDidTerminateDebugSession((e) => {
 			if (e.type.toLowerCase() === 'powershell') {
-				functionCache.clear();
+				parser.clearFunctionCache();
 			}
-		}));
+		})
+	);
 }
 
 export function deactivate() { }
