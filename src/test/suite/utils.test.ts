@@ -2,8 +2,8 @@ import * as assert from 'assert';
 import * as utils from "../../utils";
 import { DocumentSymbol, Range, SymbolKind } from 'vscode';
 
-suite('Helper functions', async () => {
-    suite('range()', async () => {
+suite('Util tests', async () => {
+    suite('range() function', async () => {
         test('returns array of 1,2,3 when called with 1,3', async () => {
             const result = utils.range(1, 3);
             assert.strictEqual(result.length, 3);
@@ -13,7 +13,7 @@ suite('Helper functions', async () => {
         });
     });
 
-    suite('flattenSymbols()', async () => {
+    suite('flattenSymbols() function', async () => {
         test('returns flat array of symbols with child-symbols', async () => {
             const root = new DocumentSymbol('f1', '', SymbolKind.Function, new Range(0, 0, 0, 0), new Range(0, 0, 0, 0));
             const child1 = new DocumentSymbol('f1-child1', '', SymbolKind.Function, new Range(0, 0, 0, 0), new Range(0, 0, 0, 0));
