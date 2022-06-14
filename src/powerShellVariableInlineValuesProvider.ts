@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
+import * as utils from './utils';
 
 export class PowerShellVariableInlineValuesProvider implements vscode.InlineValuesProvider {
 
     // Known constants
     private readonly knownConstants = ['$true', '$false', '$null'];
-    // private readonly knownConstants = /^\$(?:true|false|null)$/i;
+
     // https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_scopes?view=powershell-5.1#scope-modifiers
     private readonly supportedScopes = ['global', 'local', 'script', 'private', 'using', 'variable'];
 
@@ -80,7 +81,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
         for (var i = 0, length = functions.length; i < length; ++i) {
             const func = functions[i];
             // only return functions with stopped location in range
-            if (func.range.start.line < stoppedStart && func.range.end.line > stoppedEnd && func.range.contains(context.stoppedLocation)) {
+            if (func.range.start.line <= stoppedStart && func.range.end.line >= stoppedEnd && func.range.contains(context.stoppedLocation)) {
                 res.push(func);
             }
         }
@@ -91,7 +92,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
     private async getFunctionsInDocument(document: vscode.TextDocument) : Promise<vscode.DocumentSymbol[]> {
         const cacheKey = document.uri.toString();
         if (this.functionCache.has(cacheKey)) {
-            return this.functionCache.get(cacheKey) ?? [];
+            return this.functionCache.get(cacheKey)!;
         }
 
         const documentSymbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', document.uri);
@@ -99,22 +100,11 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
 
         if (documentSymbols) {
             // flatten symbols and keep only functions
-            functions = this.flattenSymbols(documentSymbols).filter(s => s.kind === vscode.SymbolKind.Function);
+            functions = utils.flattenSymbols(documentSymbols).filter(s => s.kind === vscode.SymbolKind.Function);
         }
 
         this.functionCache.set(cacheKey, functions);
         return functions;
-    }
-
-    private flattenSymbols(symbols: vscode.DocumentSymbol[]): vscode.DocumentSymbol[] {
-        let result: vscode.DocumentSymbol[] = [];
-        symbols.map(symbol => {
-            result.push(symbol);
-            if (symbol.children && symbol.children.length > 0) {
-                result = result.concat(this.flattenSymbols(symbol.children));
-            }
-        });
-        return result;
     }
 
     private async getStartLine(document: vscode.TextDocument, context: vscode.InlineValueContext): Promise<number> {
@@ -141,15 +131,11 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
             // will always start >= documentStart or after currentFunction start if nested function.
             // Don't bother checking functions before startLine or after stoppedLocation
             if (func.range.start.line >= startLine && func.range.start.line < stoppedEnd && !func.range.contains(context.stoppedLocation)) {
-                const functionRange = this.range(func.range.start.line, func.range.end.line);
+                const functionRange = utils.range(func.range.start.line, func.range.end.line);
                 excludedLines.push(...functionRange.filter(line => line < context.stoppedLocation.start.line || line > stoppedEnd));
             }
         }
 
         return excludedLines;
-    }
-
-    private range(start: number, end: number) {
-        return Array(end - start + 1).fill(undefined).map((_, i) => start + i);
     }
 }

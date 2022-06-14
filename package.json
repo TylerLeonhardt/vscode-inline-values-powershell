@@ -33,7 +33,7 @@
 					],
 					"enumDescriptions": [
 						"Start of current function. Defaults to top of document if not stopped inside function.",
-						"Always from top of document. Default before 0.0.7"
+						"Always from top of document. Default before 0.0.7."
 					],
 					"description": "Specifies the start position for inline values while debugging. Inline values will be shown from selected start positiion until stopped location."
 				}
