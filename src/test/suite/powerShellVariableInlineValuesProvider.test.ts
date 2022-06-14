@@ -456,3 +456,303 @@ $a*$b
 		}
 	});
 });
+
+suite('Common search range tests', async () => {
+	const provider: PowerShellVariableInlineValuesProvider = new PowerShellVariableInlineValuesProvider(new Map<string, vscode.DocumentSymbol[]>());
+
+	test('variables below stopped location are ignored', async () => {
+		const doc = await vscode.workspace.openTextDocument({
+			language: 'powershell',
+			content: `
+$a;
+$b
+$a,$b // Stopped location
+$a+$b
+$a/$b
+$a*$b
+`,
+		});
+
+		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
+			stoppedLocation: new vscode.Range(3, 0, 3, 6),
+			frameId: 0
+		});
+
+		assert.strictEqual(result?.length, 4);
+		for (let i = 0; i < result.length; i++) {
+			const variable = result![i] as vscode.InlineValueVariableLookup;
+
+			let name: string = '';
+			let startChar: number = 0;
+			let line: number = i + 1;
+			switch (i) {
+				case 0:
+					name = '$a';
+					break;
+				case 1:
+					name = '$b';
+					break;
+				case 2:
+					name = '$a';
+					line = 3;
+					break;
+				case 3:
+					name = '$b';
+					startChar = 3;
+					line = 3;
+					break;
+			}
+
+			assert.strictEqual(variable.caseSensitiveLookup, false);
+			assert.strictEqual(variable.range.start.line, line);
+			assert.strictEqual(variable.range.end.line, line);
+			assert.strictEqual(variable.range.start.character, startChar);
+			assert.strictEqual(variable.variableName, name);
+			assert.strictEqual(variable.range.end.character, name.length + startChar);
+		}
+	});
+
+	test('variables in functions outside range are ignored', async () => {
+		const doc = await vscode.workspace.openTextDocument({
+			language: 'powershell',
+			content: `
+$a;
+function test1 { $b }
+$c
+function test2 {
+	$d
+}
+$e // Stopped location
+$notfound
+`,
+		});
+
+		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
+			stoppedLocation: new vscode.Range(7, 0, 7, 3),
+			frameId: 0
+		});
+
+		assert.strictEqual(result?.length, 3);
+		for (let i = 0; i < result.length; i++) {
+			const variable = result![i] as vscode.InlineValueVariableLookup;
+
+			let name: string = '';
+			let startChar: number = 0;
+			let line: number = i + 1;
+			switch (i) {
+				case 0:
+					name = '$a';
+					break;
+				case 1:
+					name = '$c';
+					line = 3;
+					break;
+				case 2:
+					name = '$e';
+					line = 7;
+					break;
+			}
+
+			assert.strictEqual(variable.caseSensitiveLookup, false);
+			assert.strictEqual(variable.range.start.line, line);
+			assert.strictEqual(variable.range.end.line, line);
+			assert.strictEqual(variable.range.start.character, startChar);
+			assert.strictEqual(variable.variableName, name);
+			assert.strictEqual(variable.range.end.character, name.length + startChar);
+		}
+	});
+});
+
+suite('startLocation tests', async () => {
+	const provider: PowerShellVariableInlineValuesProvider = new PowerShellVariableInlineValuesProvider(new Map<string, vscode.DocumentSymbol[]>());
+	let currentSetting: string;
+
+	before(() => {
+		currentSetting = vscode.workspace.getConfiguration('powershellInlineValues').get('startLocation')!;
+	});
+
+	after(async () => {
+		await vscode.workspace.getConfiguration('powershellInlineValues').update('startLocation', currentSetting, true);
+	});
+
+	suite('startLocation is document', async () => {
+		before(async () => {
+			await vscode.workspace.getConfiguration('powershellInlineValues').update('startLocation', 'document', true);
+		});
+
+		test('all variables from document start detected', async () => {
+			const doc = await vscode.workspace.openTextDocument({
+				language: 'powershell',
+				content: `
+$a;
+function test1 {
+	function test 2 {
+        $b
+    }
+	$a // Stopped location
+}
+$notfound
+`,
+			});
+
+			const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
+				stoppedLocation: new vscode.Range(6, 4, 6, 7),
+				frameId: 0
+			});
+
+			assert.strictEqual(result?.length, 3);
+			const variable = result![0] as vscode.InlineValueVariableLookup;
+			for (let i = 0; i < result.length; i++) {
+				let name: string = '';
+				let startChar: number = 0;
+				let line: number = i + 1;
+				switch (i) {
+					case 0:
+						name = '$a';
+						break;
+					case 1:
+						name = '$b';
+						startChar = 8;
+						line = 4;
+						break;
+					case 2:
+						name = '$a';
+						startChar = 4;
+						line = 6;
+						break;
+				}
+
+				assert.strictEqual(variable.caseSensitiveLookup, false);
+				assert.strictEqual(variable.range.start.line, line);
+				assert.strictEqual(variable.range.end.line, line);
+				assert.strictEqual(variable.range.start.character, startChar);
+				assert.strictEqual(variable.variableName, name);
+				assert.strictEqual(variable.range.end.character, name.length + startChar);
+			}
+		});
+
+	});
+
+	suite('startLocation is currentFunction', async () => {
+		before(async () => {
+			await vscode.workspace.getConfiguration('powershellInlineValues').update('startLocation', 'currentFunction', true);
+		});
+
+		test('only variables inside current function detected', async () => {
+			const doc = await vscode.workspace.openTextDocument({
+				language: 'powershell',
+				content: `
+$a;
+function test1 {
+	function test 2 {
+        $b
+    }
+	$a // Stopped location
+}
+$notfound
+`,
+			});
+
+			const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
+				stoppedLocation: new vscode.Range(6, 4, 6, 7),
+				frameId: 0
+			});
+
+			assert.strictEqual(result?.length, 1);
+			const variable = result![0] as vscode.InlineValueVariableLookup;
+
+			let name: string = '$a';
+			let startChar: number = 4;
+			let line: number = 6;
+
+			assert.strictEqual(variable.caseSensitiveLookup, false);
+			assert.strictEqual(variable.range.start.line, line);
+			assert.strictEqual(variable.range.end.line, line);
+			assert.strictEqual(variable.range.start.character, startChar);
+			assert.strictEqual(variable.variableName, name);
+			assert.strictEqual(variable.range.end.character, name.length + startChar);
+		});
+
+		test('only variables inside nested function detected', async () => {
+			const doc = await vscode.workspace.openTextDocument({
+				language: 'powershell',
+				content: `
+$a;
+function test1 {
+	$a
+	function test 2 {
+        $b // Stopped location
+    }
+}
+$notfound
+`,
+			});
+
+			const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
+				stoppedLocation: new vscode.Range(5, 8, 5, 11),
+				frameId: 0
+			});
+
+			assert.strictEqual(result?.length, 1);
+			const variable = result![0] as vscode.InlineValueVariableLookup;
+
+			let name: string = '$b';
+			let startChar: number = 8;
+			let line: number = 5;
+
+			assert.strictEqual(variable.caseSensitiveLookup, false);
+			assert.strictEqual(variable.range.start.line, line);
+			assert.strictEqual(variable.range.end.line, line);
+			assert.strictEqual(variable.range.start.character, startChar);
+			assert.strictEqual(variable.variableName, name);
+			assert.strictEqual(variable.range.end.character, name.length + startChar);
+		});
+	});
+
+	test('all variables in scope from document start detected when not in function', async () => {
+		const doc = await vscode.workspace.openTextDocument({
+			language: 'powershell',
+			content: `
+$a;
+function test1 {
+	function test 2 {
+        $b
+    }
+	$a
+}
+$b // Stopped location
+$notfound
+`,
+		});
+
+		const result = await provider.provideInlineValues(doc, new vscode.Range(0, 0, 0, 0), {
+			stoppedLocation: new vscode.Range(8, 0, 8, 3),
+			frameId: 0
+		});
+
+		assert.strictEqual(result?.length, 2);
+		const variable = result![0] as vscode.InlineValueVariableLookup;
+		for (let i = 0; i < result.length; i++) {
+			let name: string = '';
+			let startChar: number = 0;
+			let line: number = i + 1;
+			switch (i) {
+				case 0:
+					name = '$a';
+					break;
+				case 1:
+					name = '$b';
+					startChar = 0;
+					line = 8;
+					break;
+			}
+
+			assert.strictEqual(variable.caseSensitiveLookup, false);
+			assert.strictEqual(variable.range.start.line, line);
+			assert.strictEqual(variable.range.end.line, line);
+			assert.strictEqual(variable.range.start.character, startChar);
+			assert.strictEqual(variable.variableName, name);
+			assert.strictEqual(variable.range.end.character, name.length + startChar);
+		}
+	});
+});
