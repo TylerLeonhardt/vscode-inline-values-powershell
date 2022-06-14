@@ -593,7 +593,7 @@ $notfound
 					content: `
 $a;
 function test1 {
-    function test 2 {
+    function test2 {
         $b
     }
     $a # Stopped location
@@ -607,7 +607,7 @@ $notfound
 					frameId: 0
 				});
 
-				assert.strictEqual(result?.length, 3);
+				assert.strictEqual(result?.length, 2);
 				for (let i = 0; i < result.length; i++) {
 					const variable = result![i] as vscode.InlineValueVariableLookup;
 					let name: string = '';
@@ -618,11 +618,6 @@ $notfound
 							name = '$a';
 							break;
 						case 1:
-							name = '$b';
-							startChar = 8;
-							line = 4;
-							break;
-						case 2:
 							name = '$a';
 							startChar = 4;
 							line = 6;
@@ -721,7 +716,7 @@ $notfound
 					content: `
 $a;
 function test1 {
-    function test 2 {
+    function test2 {
         $b
     }
     $a
