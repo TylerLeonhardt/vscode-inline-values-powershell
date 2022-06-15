@@ -1,16 +1,19 @@
 import * as path from 'path';
 import * as Mocha from 'mocha';
 import * as glob from 'glob';
+import * as testUtils from '../testUtils';
 
-export function run(): Promise<void> {
+export async function run(): Promise<void> {
 	// Create the mocha test
 	const mocha = new Mocha({
 		ui: 'tdd',
-		color: true,
-		timeout: 10000 // Increased to let PowerShell extension + PSES load in CI
+		color: true
 	});
 
 	const testsRoot = path.resolve(__dirname, '..');
+
+	// Ensure PowerShell extension is finished starting because we need it's symbol provider
+	await testUtils.ensureEditorServicesIsConnected();
 
 	return new Promise((c, e) => {
 		glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {

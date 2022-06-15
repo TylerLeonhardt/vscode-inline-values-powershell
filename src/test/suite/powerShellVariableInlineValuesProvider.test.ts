@@ -1,15 +1,9 @@
 import * as assert from 'assert';
-
 import * as vscode from 'vscode';
 import { PowerShellVariableInlineValuesProvider } from '../../powerShellVariableInlineValuesProvider';
-import * as testUtils from '../testUtils';
 import { DocumentParser } from '../../documentParser';
 
 suite('PowerShellVariableInlineValuesProvider tests', async () => {
-	suiteSetup(async () => {
-		await testUtils.ensureEditorServicesIsConnected();
-	});
-
 	suite('Variable detection', async () => {
 		const provider: PowerShellVariableInlineValuesProvider = new PowerShellVariableInlineValuesProvider(new DocumentParser());
 

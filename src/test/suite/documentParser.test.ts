@@ -1,15 +1,12 @@
 import * as assert from 'assert';
-import * as utils from "../../utils";
 import * as vscode from 'vscode';
-import * as testUtils from '../testUtils';
 import { DocumentParser } from '../../documentParser';
 
 suite('DocumentParser tests', async () => {
-    let parser: DocumentParser;
+    const parser: DocumentParser = new DocumentParser();
     let docSample1: vscode.TextDocument;
 
     suiteSetup(async () => {
-        parser = new DocumentParser();
         docSample1 = await vscode.workspace.openTextDocument({
             language: 'powershell',
             content: `
@@ -24,9 +21,6 @@ $b
 $notfound
 `,
         });
-
-        // Ensure PowerShell extension is finished starting because we need it's symbol provider
-        await testUtils.ensureEditorServicesIsConnected();
     });
 
     suite('getFunctionsInScope() function', async () => {
@@ -176,7 +170,7 @@ test2
                 language: 'powershell',
                 content: `
 function test2 {
-    $b # Stopped location
+    $b
 }; $param = @{ # Stopped location
     Abc = 123 # Stopped location
 } # Stopped location
