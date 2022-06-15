@@ -137,14 +137,14 @@ test1
             });
 
             const result = await parser.getExcludedLines(doc, new vscode.Range(11, 0, 11, 3), 0);
-            assert.strictEqual(result.length, 7);
-            assert.strictEqual(result[0], 2);
-            assert.strictEqual(result[1], 3);
-            assert.strictEqual(result[2], 4);
-            assert.strictEqual(result[3], 5);
-            assert.strictEqual(result[4], 7);
-            assert.strictEqual(result[5], 8);
-            assert.strictEqual(result[6], 9);
+            assert.strictEqual(result.size, 7);
+            assert.strictEqual(result.has(2), true);
+            assert.strictEqual(result.has(3), true);
+            assert.strictEqual(result.has(4), true);
+            assert.strictEqual(result.has(5), true);
+            assert.strictEqual(result.has(7), true);
+            assert.strictEqual(result.has(8), true);
+            assert.strictEqual(result.has(9), true);
         });
 
         test('returns empty array when no functions out of scope are present in range', async () => {
@@ -168,7 +168,37 @@ test2
             });
 
             const result = await parser.getExcludedLines(doc, new vscode.Range(8, 4, 8, 7), 7);
-            assert.strictEqual(result.length, 0);
+            assert.strictEqual(result.size, 0);
+        });
+
+        test('does not exclude stoppedLocation multi-range', async () => {
+            const doc = await vscode.workspace.openTextDocument({
+                language: 'powershell',
+                content: `
+function test2 {
+    $b # Stopped location
+}; $param = @{ # Stopped location
+    Abc = 123 # Stopped location
+} # Stopped location
+`,
+            });
+
+            const result = await parser.getExcludedLines(doc, new vscode.Range(3, 3, 5, 1), 0);
+            assert.strictEqual(result.size, 2);
+            assert.strictEqual(result.has(1), true);
+            assert.strictEqual(result.has(2), true);
+        });
+
+        test('does not exclude stoppedLocation line when same as out of scope function', async () => {
+            const doc = await vscode.workspace.openTextDocument({
+                language: 'powershell',
+                content: `
+function test1 { }; $b; function test2 { }; #$b is stoppedLocation
+`,
+            });
+
+            const result = await parser.getExcludedLines(doc, new vscode.Range(1, 20, 1, 25), 0);
+            assert.strictEqual(result.size, 0);
         });
     });
 });

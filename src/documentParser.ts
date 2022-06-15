@@ -5,6 +5,7 @@ export class DocumentParser {
     // Used to avoid calling symbol provider for the same document on every stopped location
     private readonly functionCache: Map<string, vscode.DocumentSymbol[]> = new Map<string, vscode.DocumentSymbol[]>();
 
+    // Clear cache between debugsessions to get updated symbols
     clearFunctionCache(): void {
         this.functionCache.clear();
     }
@@ -54,7 +55,7 @@ export class DocumentParser {
         return Math.max(0, ...functions.map(fn => fn.range.start.line));
     }
 
-    async getExcludedLines(document: vscode.TextDocument, stoppedLocation: vscode.Range, startLine: number): Promise<number[]> {
+    async getExcludedLines(document: vscode.TextDocument, stoppedLocation: vscode.Range, startLine: number): Promise<Set<number>> {
         const functions = await this.getFunctionsInDocument(document);
         const stoppedEnd = stoppedLocation.end.line;
         const excludedLines = [];
@@ -62,15 +63,13 @@ export class DocumentParser {
         for (var i = 0, length = functions.length; i < length; ++i) {
             const func = functions[i];
             // startLine (either document start or closest function start) are provided, so functions necessary to exclude
-            // will always start >= documentStart or after currentFunction start if nested function.
+            // will always start >= documentStart or same as currentFunction start if nested function.
             // Don't bother checking functions before startLine or after stoppedLocation
-            if (func.range.start.line >= startLine && func.range.start.line < stoppedEnd && !func.range.contains(stoppedLocation)) {
+            if (func.range.start.line >= startLine && func.range.start.line <= stoppedEnd && !func.range.contains(stoppedLocation)) {
                 const functionRange = utils.range(func.range.start.line, func.range.end.line);
-                excludedLines.push(...functionRange.filter(line => line < stoppedLocation.start.line || line > stoppedEnd));
+                excludedLines.push(...functionRange);
             }
         }
-
-        return excludedLines;
+        return new Set(excludedLines.filter(line => line < stoppedLocation.start.line || line > stoppedEnd));
     }
-
 }

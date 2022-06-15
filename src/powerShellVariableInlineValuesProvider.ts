@@ -17,8 +17,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
         `(?:\\$(?:[a-zA-Z]+:)?${this.alphanumChars}+)`, // Scoped or normal variables
     ].join('|'), 'giu'); // u flag to support unicode char classes
 
-    // Cache for symbols per document in the current debugsessions
-    private documentParser: DocumentParser;
+    private readonly documentParser: DocumentParser;
 
     constructor(documentParser: DocumentParser) {
         this.documentParser = documentParser;
@@ -35,7 +34,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
 
         for (let l = startLine; l <= endLine; l++) {
             // Exclude lines out of scope (other functions)
-            if (excludedLines.includes(l)) {
+            if (excludedLines.has(l)) {
                 continue;
             }
 
