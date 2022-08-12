@@ -18,7 +18,7 @@ export class DocumentParser {
 
         for (var i = 0, length = functions.length; i < length; ++i) {
             const func = functions[i];
-            // only return functions with stopped location in range
+            // Only return functions with stopped location inside range
             if (func.range.start.line <= stoppedStart && func.range.end.line >= stoppedEnd && func.range.contains(stoppedLocation)) {
                 res.push(func);
             }
@@ -37,7 +37,7 @@ export class DocumentParser {
         let functions: vscode.DocumentSymbol[] = [];
 
         if (documentSymbols) {
-            // flatten symbols and keep only functions
+            // Get all functions in a flat array from the symbol-tree
             functions = utils.flattenSymbols(documentSymbols).filter(s => s.kind === vscode.SymbolKind.Function);
         }
 
@@ -50,7 +50,7 @@ export class DocumentParser {
             return 0;
         }
 
-        // Lookup closest matching function start or default to document start (0)
+        // Lookup closest matching function start line or default to document start (0)
         const functions = await this.getFunctionsInScope(document, stoppedLocation);
         return Math.max(0, ...functions.map(fn => fn.range.start.line));
     }
@@ -62,7 +62,7 @@ export class DocumentParser {
 
         for (var i = 0, length = functions.length; i < length; ++i) {
             const func = functions[i];
-            // startLine (either document start or closest function start) are provided, so functions necessary to exclude
+            // StartLine (either document start or closest function start) are provided, so functions necessary to exclude
             // will always start >= documentStart or same as currentFunction start if nested function.
             // Don't bother checking functions before startLine or after stoppedLocation
             if (func.range.start.line >= startLine && func.range.start.line <= stoppedEnd && !func.range.contains(stoppedLocation)) {
@@ -70,6 +70,8 @@ export class DocumentParser {
                 excludedLines.push(...functionRange);
             }
         }
+
+        // Ensure we don't exclude our stopped location and make lookup blazing fast
         return new Set(excludedLines.filter(line => line < stoppedLocation.start.line || line > stoppedEnd));
     }
 }
