@@ -1,26 +1,43 @@
 import * as vscode from 'vscode';
+import { DocumentParser } from './documentParser';
 
 export class PowerShellVariableInlineValuesProvider implements vscode.InlineValuesProvider {
 
     // Known constants
-    private readonly knownConstants = /^\$(?:true|false|null)$/i;
+    private readonly knownConstants = ['$true', '$false', '$null'];
 
     // https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_scopes?view=powershell-5.1#scope-modifiers
-    private readonly supportedScopes = /^(?:global|local|script|private|using|variable)$/i;
+    private readonly supportedScopes = ['global', 'local', 'script', 'private', 'using', 'variable'];
 
     // Variable patterns
     // https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_variables?view=powershell-5.1#variable-names-that-include-special-characters
-    private readonly alphanumChars = /(?:\p{Lu}|\p{Ll}|\p{Lt}|\p{Lm}|\p{Lo}|\p{Nd}|[_?])/.source;
+    private readonly alphanumChars = /(?:\p{Ll}|\p{Lu}|\p{Nd}|[_?]|\p{Lt}|\p{Lm}|\p{Lo})/.source;
     private readonly variableRegex = new RegExp([
         '(?:\\$\\{(?<specialName>.*?)(?<!`)\\})', // Special characters variables. Lazy match until unescaped }
-        `(?:\\$\\w+:${this.alphanumChars}+)`, // Scoped variables
-        `(?:\\$${this.alphanumChars}+)`, // Normal variables
+        `(?:\\$(?:[a-zA-Z]+:)?${this.alphanumChars}+)`, // Scoped or normal variables
     ].join('|'), 'giu'); // u flag to support unicode char classes
 
-    provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext): vscode.ProviderResult<vscode.InlineValue[]> {
+    private readonly documentParser: DocumentParser;
+
+    constructor(documentParser: DocumentParser) {
+        this.documentParser = documentParser;
+    }
+
+    async provideInlineValues(document: vscode.TextDocument, viewport: vscode.Range, context: vscode.InlineValueContext): Promise<vscode.InlineValue[]> {
         const allValues: vscode.InlineValue[] = [];
 
-        for (let l = 0; l <= context.stoppedLocation.end.line; l++) {
+        const extensionSettings = vscode.workspace.getConfiguration('powershellInlineValues');
+        const startLocationSetting = extensionSettings.get<string>('startLocation') ?? 'currentFunction';
+        const startLine = await this.documentParser.getStartLine(document, startLocationSetting, context.stoppedLocation);
+        const endLine = context.stoppedLocation.end.line;
+        const excludedLines = await this.documentParser.getExcludedLines(document, context.stoppedLocation, startLine);
+
+        for (let l = startLine; l <= endLine; l++) {
+            // Exclude lines out of scope (other functions)
+            if (excludedLines.has(l)) {
+                continue;
+            }
+
             const line = document.lineAt(l);
 
             // Skip over comments
@@ -39,7 +56,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
                 if (colon !== -1) {
                     // If invalid scope, ignore
                     const scope = varName.substring(1, colon);
-                    if (!this.supportedScopes.test(scope)) {
+                    if (!this.supportedScopes.includes(scope.toLowerCase())) {
                         continue;
                     }
 
@@ -47,7 +64,7 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
                 }
 
                 // If known PowerShell constant, ignore
-                if (this.knownConstants.test(varName)) {
+                if (this.knownConstants.includes(varName.toLowerCase())) {
                     continue;
                 }
 
@@ -55,7 +72,6 @@ export class PowerShellVariableInlineValuesProvider implements vscode.InlineValu
                 allValues.push(new vscode.InlineValueVariableLookup(rng, varName, false));
             }
         }
-
         return allValues;
     }
 }
